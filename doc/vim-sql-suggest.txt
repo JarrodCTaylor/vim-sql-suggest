@@ -1,0 +1,25 @@
+*vim-sql-suggest.txt* A short multi line description of your plugin
+
+===============================================================================
+CONTENTS                                                      *vim-sql-suggest*
+
+    1. Intro .......................................... |vim-sql-suggest-intro|
+    2. Requirements ............................ |vim-sql-suggest-requirements|
+    3. Usage .......................................... |vim-sql-suggest-usage|
+    4. Licence ...................................... |vim-sql-suggest-licence|
+===============================================================================
+1. Intro                                                *vim-sql-suggest-intro*
+
+Overview of plugin
+
+2. Requirements                                  *vim-sql-suggest-requirements*
+
+What additional programs are required to run the plugin
+
+3. Usage                                                *vim-sql-suggest-usage*
+
+How to use the plugin. What functions does it give the user?
+
+4. Licence                                            *vim-sql-suggest-licence*
+
+This is open source make sure to include a licence
