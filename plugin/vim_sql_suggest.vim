@@ -11,13 +11,30 @@ python sys.path.append(vim.eval('expand("<sfile>:h")'))
 "  TEMP MOVE THIS WHERE IT BELONGS
 " --------------------------------
 let g:suggest_db = "mysql -u root test"
+"let g:suggest_db = "psql -U Jrock libexample"
 
 " --------------------------------
 "  Function(s)
 " --------------------------------
+function! UpdateDBSpecificQueryStatements()
+python << endPython
+queries = {
+  "psql_tables": "-c \\\"select tablename from pg_tables where schemaname = 'public'\\\"",
+  "psql_columns": "-c \\\"select column_name from information_schema.columns where table_name = 'users'\\\"",
+  "mysql_tables": "-e 'SHOW tables;'",
+  "mysql_columns": "-e 'SHOW COLUMNS FROM"
+}
+db_type = vim.eval("g:suggest_db").split(" ")[0]
+get_tables_query = queries[db_type + "_tables"]
+get_columns_query = queries[db_type + "_columns"]
+vim.command("let b:get_tables_query = \"{}\"".format(get_tables_query))
+vim.command("let b:get_columns_query = \"{}\"".format(get_columns_query))
+endPython
+endfunction
+
 function! UpdateTableNames()
 python << endPython
-query_string = "{0} -e 'SHOW tables;'".format(vim.eval("g:suggest_db"))
+query_string = "{0} {1}".format(vim.eval("g:suggest_db"), vim.eval("b:get_tables_query"))
 tables = subprocess.check_output(query_string, shell=True)
 vim.command("let g:sql_suggest_tables = {}".format(tables.rstrip().split("\n")[1:]))
 endPython
@@ -25,20 +42,18 @@ endfunction
 
 function! UpdateColNames()
 python << endPython
-try:
-    vim.command("call UpdateTableNames()")
-    table_cols = []
-    for table in vim.eval("g:sql_suggest_tables"):
-        query_string = "{0} -e 'SHOW COLUMNS FROM {1}'".format("mysql -u root test", table)
-        columns = subprocess.check_output(query_string, shell=True)
-        table_cols.extend([{"word": column.split("\t")[0], "menu": table, "dup": 1} for column in columns.rstrip().split("\n")[1:]])
-    vim.command("let g:sql_suggest_columns = {}".format(table_cols))
-except Exception as e:
-    print(e)
+vim.command("call UpdateTableNames()")
+table_cols = []
+for table in vim.eval("g:sql_suggest_tables"):
+    query_string = "{0} {1} {2}'".format(vim.eval("g:suggest_db"), vim.eval("b:get_columns_query"), table)
+    columns = subprocess.check_output(query_string, shell=True)
+    table_cols.extend([{"word": column.split("\t")[0], "menu": table, "dup": 1} for column in columns.rstrip().split("\n")[1:]])
+vim.command("let g:sql_suggest_columns = {}".format(table_cols))
 endPython
 endfunction
 
 function! UpdateCompletionList(completeFor)
+    call UpdateDBSpecificQueryStatements()
     if a:completeFor == "table"
         call UpdateTableNames()
         let b:list = g:sql_suggest_tables
