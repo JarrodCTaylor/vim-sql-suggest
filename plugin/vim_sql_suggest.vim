@@ -11,57 +11,37 @@ python sys.path.append(vim.eval('expand("<sfile>:h")'))
 "  TEMP MOVE THIS WHERE IT BELONGS
 " --------------------------------
 let g:suggest_db = "mysql -u root test"
+" psql libexample -c "select tablename from pg_tables where schemaname = 'public'"
+" psql libexample -c "select column_name from information_schema.columns where table_name = 'users'"
 
 " --------------------------------
 "  Function(s)
 " --------------------------------
-function! TemplateExample()
-python << endOfPython
-
-from vim_sql_suggest import vim_sql_suggest_example
-
-for n in range(5):
-    print(vim_sql_suggest_example())
-
-endOfPython
-endfunction
-
 function! UpdateTableNames()
 python << endPython
-tbls = subprocess.check_call("{0} -e 'SHOW tables;' > /tmp/db-tables.txt".format(vim.eval("g:suggest_db")), shell=True)
-def read_file_lines(file_to_read):
-    if os.path.isfile(file_to_read):
-        with open(file_to_read, "r") as f:
-            return [l.rstrip('\n') for l in f.readlines()]
-tables = read_file_lines("/tmp/db-tables.txt")
+query_string = "{0} -e 'SHOW tables;'".format(vim.eval("g:suggest_db"))
+tables = subprocess.check_output(query_string, shell=True)
 vim.command("let g:sql_tables = {}".format(tables[1:]))
 endPython
 endfunction
 
 function! UpdateColNames()
 python << endPython
-
-def read_file_lines(file_to_read):
-    if os.path.isfile(file_to_read):
-        with open(file_to_read, "r") as f:
-            return [l.rstrip('\n') for l in f.readlines()]
-
 try:
-    # TODO make this actually loop through the table and build up the dict of columns
+    vim.command("call UpdateTableNames()")
     table_cols = []
-    if os.path.exists("/tmp/query-out.txt"):
-        os.remove("/tmp/query-out.txt")
     for table in vim.eval("g:sql_tables"):
-        subprocess.check_call("{0} -e 'SHOW COLUMNS FROM {1}' >> /tmp/query-out.txt".format(vim.eval("g:suggest_db"), table), shell=True)
-    vim.command("let g:sql_suggest_columns = {}".format([{"word": column.split("\t")[0], "menu": vim.eval("g:suggest_tbl")} for column in read_file_lines("/tmp/query-out.txt")[1:]]))
-    #[{"word": column.split("\t")[0], "menu": vim.eval("g:suggest_tbl")} for column in read_file_lines("/tmp/query-out.txt")[1:]]
-except:
-    pass
+        query_string = "{0} -e 'SHOW COLUMNS FROM {1}'".format("mysql -u root test", table)
+        columns = subprocess.check_output(query_string, shell=True)
+        table_cols.extend([{"word": column.split("\t")[0], "menu": table, "dup": 1} for column in columns.rstrip().split("\n")[1:]])
+    vim.command("let g:sql_suggest_columns = {}".format(table_cols))
+except Exception as e:
+    print(e)
 endPython
 endfunction
 
-func! CustomComplete()
-        execute "normal! b"
+func! CompleteColumn()
+        execute "normal! h"
         let l:word = expand('<cword>')
         let l:position = col('.')
         execute "normal! A\<space>"
@@ -77,13 +57,9 @@ func! CustomComplete()
         return ''
 endfunc
 
-" psql libexample -c "select tablename from pg_tables where schemaname = 'public'"
-" psql libexample -c "select column_name from information_schema.columns where table_name = 'users'"
 " --------------------------------
 "  Expose our commands to the user
 " --------------------------------
 " --------------------------------
 "  This does not need to stay
-inoremap <Leader>ci <C-R>=CustomComplete()<CR>
-" --------------------------------
-command! Example call TemplateExample()
+inoremap <Leader>ci <C-R>=CompleteColumn()<CR>
