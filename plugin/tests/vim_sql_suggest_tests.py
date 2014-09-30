@@ -32,7 +32,7 @@ class VimSqlSuggestTests(unittest.TestCase):
         with patch('subprocess.check_output', side_effect=["Tables_in_test\ntable1\ntable2",
                                                            "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nthing\tvarchar(100)\tNO\tNULL\t",
                                                            "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nthing\tvarchar(100)\tNO\tNULL\t"]):
-            col_list = sut.get_column_names("mysql -u root test")
+            col_list = sut.get_column_names("mysql -u root test", "dummy")
             expected_return_val = [{'dup': 1, 'menu': 'table1', 'word': 'id'},
                                    {'dup': 1, 'menu': 'table1', 'word': 'thing'},
                                    {'dup': 1, 'menu': 'table2', 'word': 'id'},
@@ -44,7 +44,7 @@ class VimSqlSuggestTests(unittest.TestCase):
         with patch('subprocess.check_output', side_effect=[" tablename\n----------\n table1\n table2\n(2 rows)",
                                                            " column_name\n----------\n id\n thing\n(2 rows)",
                                                            " column_name\n----------\n id\n stuff\n(2 rows)"]):
-            col_list = sut.get_column_names("psql -U Jrock test")
+            col_list = sut.get_column_names("psql -U Jrock test", "dummy")
             expected_return_val = [{'dup': 1, 'menu': 'table1', 'word': 'id'},
                                    {'dup': 1, 'menu': 'table1', 'word': 'thing'},
                                    {'dup': 1, 'menu': 'table2', 'word': 'id'},
