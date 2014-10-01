@@ -1,6 +1,6 @@
-" --------------------------------
-" Add our plugin to the path
-" --------------------------------
+" ================================
+" Plugin Imports
+" ================================
 python import sys
 python import vim
 python import os
@@ -8,47 +8,74 @@ python import subprocess
 python sys.path.append(vim.eval('expand("<sfile>:h")'))
 python from vim_sql_suggest import *
 
-" --------------------------------
-"  Function(s)
-" --------------------------------
+" ================================
+" Plugin Function(s)
+" ================================
+
+"""
+" The plugin offers to complete either table or columns names. This function
+" delegates to the appropriate python function to populate the completionList
+" with the desired contents.
+"""
 function! UpdateCompletionList(completeFor, wordToComplete)
 python << endPython
 complete_for = vim.eval("a:completeFor")
 if complete_for == "table":
-    vim.command("let b:list = {}".format(get_table_names(vim.eval("g:suggest_db"))))
+    vim.command("let b:completionList = {}".format(get_table_names(vim.eval("g:suggest_db"))))
 else:
-    vim.command("let b:list = {}".format(get_column_names(vim.eval("g:suggest_db"), vim.eval("a:wordToComplete"))))
+    vim.command("let b:completionList = {}".format(get_column_names(vim.eval("g:suggest_db"), vim.eval("a:wordToComplete"))))
 endPython
 endfunction
 
-function! SQLComplete(completeFor)
-    " TODO break this out to a update l:word function
+"""
+" The complete function is called while in insert mode. We check the
+" character that is two chars behind the cursor. If it is ' ' then the
+" user hasn't specified a word to complete if there is a non ' ' character
+" there then we grab the <cWORD> because we need to know if there is a '.'
+" at the end of the word that has been entered.
+"""
+function! UpdateWordToComplete()
     if getline(".")[col(".")-2] == " "
-        let l:word = ""
+        let b:wordToComplete = ""
     else
         execute "normal! b"
-        let l:word = expand('<cWORD>')
+        let b:wordToComplete = expand('<cWORD>')
     endif
-    let l:position = col('.')
-    execute "normal! A\<space>"
-    call UpdateCompletionList(a:completeFor, l:word)
-    " TODO break this out to a update l:matches function
-    " Words ending with a '.' are tables and we want all columns
-    if l:word[len(l:word) - 1] == "."
-        let l:matches = b:list
+endfunction
+
+"""
+" If the word to complete ends with a '.' then we make the assumption that
+" the dot is preceded with a table name and the user wants all of the
+" columns for that table returned as complete options.
+"""
+function! UpdateMatches()
+    if b:wordToComplete[len(b:wordToComplete) - 1] == "."
+        let b:matches = b:completionList
     else
-        let l:matches = []
-        for item in b:list
-            if(match(item["word"],'^'.l:word)==0)
-                call add(l:matches,item)
+        let b:matches = []
+        for item in b:completionList
+            if(match(item["word"],'^'.b:wordToComplete)==0)
+                call add(b:matches,item)
             endif
         endfor
     endif
+endfunction
+
+function! SQLComplete(completeFor)
+    call UpdateWordToComplete()
+    let l:cursorPosition = col('.')
+    execute "normal! A\<space>"
+    call UpdateCompletionList(a:completeFor, b:wordToComplete)
+    call UpdateMatches()
     redraw!
-    call complete(l:position, l:matches)
+    call complete(l:cursorPosition, b:matches)
     return ''
 endfunc
 
+"""
+" A convenience function that informs the user of the current database and
+" allows them to provide a connection to a new database.
+"""
 function! UpdateSuggestDB()
 python << endPython
 def python_input(message = 'input'):
@@ -64,4 +91,7 @@ vim.command('let g:suggest_db = "{}"'.format(new_db))
 endPython
 endfunction
 
+" ================================
+" Plugin Commands
+" ================================
 command! UpdateSuggestDB call UpdateSuggestDB()
