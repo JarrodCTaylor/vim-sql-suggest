@@ -22,31 +22,29 @@ endPython
 endfunction
 
 function! SQLComplete(completeFor)
-    " The current column the cursor is in
+    " TODO break this out to a update l:word function
+    if getline(".")[col(".")-2] == " "
+        let l:word = ""
+    else
+        execute "normal! b"
+        let l:word = expand('<cWORD>')
+    endif
     let l:position = col('.')
-    " Move the cursor one space to the left
-    execute "normal! h"
-    " Grab the WORD that is under the cursor
-    let l:word = expand('<cWORD>')
-    " Enter insert mode and move the cursor to the end of the line and add a space
     execute "normal! A\<space>"
-    " Correctly updated the options for the completion list for either tables or columns
     call UpdateCompletionList(a:completeFor, l:word)
-    " Words ending with a '.' we will assume are table names and we want all the columns
+    " TODO break this out to a update l:matches function
+    " Words ending with a '.' are tables and we want all columns
     if l:word[len(l:word) - 1] == "."
         let l:matches = b:list
     else
         let l:matches = []
         for item in b:list
-            " We add the items from the list that match our word
             if(match(item["word"],'^'.l:word)==0)
                 call add(l:matches,item)
             endif
         endfor
     endif
-    " The screen gets nutty so we need to redraw!
     redraw!
-    " Actually put the auto completion list in the buffer
     call complete(l:position, l:matches)
     return ''
 endfunc

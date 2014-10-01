@@ -19,13 +19,13 @@ class VimSqlSuggestTests(unittest.TestCase):
     def test_get_table_names_for_mysql(self, sb_output):
         sb_output.return_value = "Tables_in_test\ntable1\ntable2\ntable3"
         table_list = sut.get_table_names("mysql -u root test")
-        self.assertEqual(table_list, ["table1", "table2", "table3"])
+        self.assertEqual(table_list, [{"word": "table1"}, {"word": "table2"}, {"word": "table3"}])
 
     @patch('subprocess.check_output')
     def test_get_table_names_for_psql(self, sb_output):
         sb_output.return_value = " tablename\n----------\n table1\n table2\n table3\n(3 rows)"
         table_list = sut.get_table_names("psql -U Jrock test")
-        self.assertEqual(table_list, ["table1", "table2", "table3"])
+        self.assertEqual(table_list, [{"word": "table1"}, {"word": "table2"}, {"word": "table3"}])
 
     @patch('subprocess.check_output')
     def test_get_column_names_for_mysql(self, sb_output):
@@ -49,4 +49,22 @@ class VimSqlSuggestTests(unittest.TestCase):
                                    {'dup': 1, 'menu': 'table1', 'word': 'thing'},
                                    {'dup': 1, 'menu': 'table2', 'word': 'id'},
                                    {'dup': 1, 'menu': 'table2', 'word': 'stuff'}]
+            self.assertEqual(col_list, expected_return_val)
+
+    @patch('subprocess.check_output')
+    def test_get_column_names_for_mysql_when_word_to_complete_ends_with_a_dot(self, sb_output):
+        with patch('subprocess.check_output', side_effect=["Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nthing\tvarchar(100)\tNO\tNULL\t",
+                                                           "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\nthing\tvarchar(100)\tNO\tNULL\t"]):
+            col_list = sut.get_column_names("mysql -u root test", "table1.")
+            expected_return_val = [{'dup': 1, 'menu': 'table1', 'word': '.id'},
+                                   {'dup': 1, 'menu': 'table1', 'word': '.thing'}]
+            self.assertEqual(col_list, expected_return_val)
+
+    @patch('subprocess.check_output')
+    def test_get_column_names_for_psql_when_word_to_complete_ends_with_a_dot(self, sb_output):
+        with patch('subprocess.check_output', side_effect=[" column_name\n----------\n id\n thing\n(2 rows)",
+                                                           " column_name\n----------\n id\n stuff\n(2 rows)"]):
+            col_list = sut.get_column_names("psql -U Jrock test", "table1.")
+            expected_return_val = [{'dup': 1, 'menu': 'table1', 'word': '.id'},
+                                   {'dup': 1, 'menu': 'table1', 'word': '.thing'}]
             self.assertEqual(col_list, expected_return_val)
