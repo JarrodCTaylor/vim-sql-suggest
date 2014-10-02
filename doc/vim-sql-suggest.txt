@@ -4,22 +4,55 @@
 CONTENTS                                                      *vim-sql-suggest*
 
     1. Intro .......................................... |vim-sql-suggest-intro|
-    2. Requirements ............................ |vim-sql-suggest-requirements|
-    3. Usage .......................................... |vim-sql-suggest-usage|
-    4. Licence ...................................... |vim-sql-suggest-licence|
+    2. Usage .......................................... |vim-sql-suggest-usage|
+    3. Licence ...................................... |vim-sql-suggest-licence|
 ===============================================================================
 1. Intro                                                *vim-sql-suggest-intro*
 
-Overview of plugin
+Use the omnicomplete popup menu to explore and complete SQL table and column
+names. The plugin currently supports `mysql` and `postgres` databases.
 
-2. Requirements                                  *vim-sql-suggest-requirements*
+2. Usage                                                *vim-sql-suggest-usage*
 
-What additional programs are required to run the plugin
+The plugin provides one function to call for completing tables and columns and
+a convenience function for easily switching the database that suggestions are
+provided for.
 
-3. Usage                                                *vim-sql-suggest-usage*
+2.1 Mapping The Functions
 
-How to use the plugin. What functions does it give the user?
+You will need to map the complete function in insert mode. Here is an example.
+`<Leader>sc` will complete for columns and `<Leader>st` will complete for
+tables.
 
-4. Licence                                            *vim-sql-suggest-licence*
+``` vim
+inoremap <Leader>sc <C-R>=SQLComplete("column")<CR>
+inoremap <Leader>st <C-R>=SQLComplete("table")<CR>
+```
 
-This is open source make sure to include a licence
+2.2 Default Database
+
+You can set a default database by setting the variable `suggest_db` in your `.vimrc` like so:
+
+``` vim
+let g:suggest_db = "psql -U Jrock example_table"
+```
+
+You can also use the command `UpdateSuggestDB` to easily set the database that
+the plugin will look in for completions.
+
+
+3. Licence                                            *vim-sql-suggest-licence*
+
+DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE 
+Version 2, December 2004 
+
+Copyright (C) 2014 Jarrod Taylor <jarrod.c.taylor@gmail.com> 
+
+Everyone is permitted to copy and distribute verbatim or modified 
+copies of this license document, and changing it is allowed as long 
+as the name is changed. 
+
+DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE 
+TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION 
+
+0. You just DO WHAT THE FUCK YOU WANT TO.
