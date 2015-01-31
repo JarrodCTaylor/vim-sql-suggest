@@ -1,6 +1,7 @@
 import unittest
 from mock import patch
-import vim_sql_suggest as sut
+
+import autoload.vim_sql_suggest as sut
 
 
 class VimSqlSuggestTests(unittest.TestCase):
